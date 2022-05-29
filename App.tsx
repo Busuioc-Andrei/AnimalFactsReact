@@ -1,101 +1,68 @@
 import { StatusBar } from 'expo-status-bar';
+import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
 import styled from "styled-components/native";
 import { ActivityIndicator, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AnimalContext, { IAnimal } from './src/context/AnimalContext';
+import { DarkTheme, NavigationContainer } from '@react-navigation/native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import AnimalFactsNavigator from './src/screens/Index';
+import { API_URL } from './src/constants';
+import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
+import AddAnimal from './src/screens/AddAnimal';
+
+const Drawer = createDrawerNavigator();
 
 export default function App() {
+  const [animals, setAnimals] = useState<IAnimal[]>([]);
 
-  const [data, setData] = useState<Animal[]>([]);
-  const [input, setInput] = useState<string>('');
-
-  interface Animal {
-    id: string;
-    createdAt: Date;
-    modifiedAt: Date;
-    name: string;
-  }
-
-  const Container = styled.View`
-    width: 100%;
-    flex-direction: row;
-  `;
-
-  const Input = styled.TextInput`
-      flex: 1;
-      height: 50px;
-      border: 1px solid;
-      padding: 4px;
-      border-radius: 4px;
-      margin-right: 12px
-  `;
-
-  const rootUrl = 'http://192.168.0.105:8080/';
-
-  const getAnimals = async () => {
-    try {
-      const response = await fetch(rootUrl + 'crud/animals');
-      const json = await response.json();
-      setData(json);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  const postAnimal = async (name: string) => {
-    try {
-      const response = fetch(rootUrl + 'crud/animal', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: name
-        })
+  const loadAnimals = async () => {
+    const items = await fetch(`${API_URL}/crud/animals`)
+      .then(res => res.json())
+      .catch((e) => {
+        console.log(e);
+        return [];
       });
-    } catch (error) {
-      console.error(error);
-    }
+    setAnimals(items);
   }
 
-  const handlePress = () => {
-    if (input) {
-      postAnimal(input);
-      setInput('');
-    }
+  const addAnimal = async (name: string) => {
+    await fetch(`${API_URL}/crud/animal`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    await loadAnimals();
+  }
+
+  const deleteAnimal = async (id: string) => {
+    await fetch(`${API_URL}/crud/animal?id=${id}`, {
+      method: 'DELETE'
+    });
+    await loadAnimals();
   }
 
   useEffect(() => {
-    getAnimals();
-  }, [input]);
+    loadAnimals();
+  }, [])
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Container>
-        <Input
-          onChangeText={setInput}
-          value={input}
-        />
-        <Button
-          onPress={handlePress}
-          title='create'
-          color='#841584'
-        />
-       </Container>
-       <FlatList
-          data={data}
-          keyExtractor={({ id }, index) => id}
-          renderItem={({ item }) => (
-            <Text>{item.id} {item.name}</Text>
-          )}
-        />
-    </SafeAreaView>
+    <PaperProvider>
+      <AnimalContext.Provider value={{
+        addAnimal,
+        deleteAnimal,
+        allAnimals: animals
+      }}>
+        <NavigationContainer>
+          <Drawer.Navigator initialRouteName="Browse">
+            <Drawer.Screen name="Browse" component={AnimalFactsNavigator} />
+            <Drawer.Screen name="Add Animal" component={AddAnimal} />
+          </Drawer.Navigator>
+        </NavigationContainer>
+      </AnimalContext.Provider>
+    </PaperProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 10
-  }
-});
