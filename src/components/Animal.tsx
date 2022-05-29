@@ -1,9 +1,9 @@
 import React from "react";
 import { IAnimal, useAnimalContext } from "../context/AnimalContext";
-import { Card, Text, Button, Title} from "react-native-paper";
+import { Card, Button, Title} from "react-native-paper";
 
 const Animal: React.FC<{ animal: IAnimal }> = ({ animal }) => {
-    const { id, name } = animal;
+    const { id, name, imageUrl } = animal;
     const { deleteAnimal } = useAnimalContext();
 
     const handlePress = () => {
@@ -17,6 +17,7 @@ const Animal: React.FC<{ animal: IAnimal }> = ({ animal }) => {
             <Card.Content>
                 <Title>{name}</Title>
             </Card.Content>
+            <Card.Cover source={{ uri: imageUrl }} />
             <Card.Actions>
                 <Button onPress={handlePress}>
                     Delete

@@ -11,11 +11,14 @@ import AnimalFactsNavigator from './src/screens/Index';
 import { API_URL } from './src/constants';
 import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
 import AddAnimal from './src/screens/AddAnimal';
+import AddFact from './src/screens/AddFact';
+import FactContext, { IFact } from './src/context/FactContext';
 
 const Drawer = createDrawerNavigator();
 
 export default function App() {
   const [animals, setAnimals] = useState<IAnimal[]>([]);
+  const [facts, setFacts] = useState<IFact[]>([]);
 
   const loadAnimals = async () => {
     const items = await fetch(`${API_URL}/crud/animals`)
@@ -27,10 +30,10 @@ export default function App() {
     setAnimals(items);
   }
 
-  const addAnimal = async (name: string) => {
+  const addAnimal = async (name: string, imageUrl: string) => {
     await fetch(`${API_URL}/crud/animal`, {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, imageUrl }),
       headers: {
         'Content-Type': 'application/json'
       }
@@ -45,8 +48,38 @@ export default function App() {
     await loadAnimals();
   }
 
+
+  const loadFacts = async () => {
+    const items = await fetch(`${API_URL}/crud/facts`)
+      .then(res => res.json())
+      .catch((e) => {
+        console.log(e);
+        return [];
+      });
+    setFacts(items);
+  }
+
+  const addFact = async (animalId: string, description: string) => {
+    await fetch(`${API_URL}/crud/${animalId}/fact`, {
+      method: 'POST',
+      body: JSON.stringify({ description }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    await loadFacts();
+  }
+
+  const deleteFact = async (id: string) => {
+    await fetch(`${API_URL}/crud/fact?id=${id}`, {
+      method: 'DELETE'
+    });
+    await loadFacts();
+  }
+
   useEffect(() => {
     loadAnimals();
+    loadFacts();
   }, [])
 
   return (
@@ -56,12 +89,19 @@ export default function App() {
         deleteAnimal,
         allAnimals: animals
       }}>
+        <FactContext.Provider value={{
+          addFact,
+          deleteFact,
+          allFacts: facts
+        }}>
         <NavigationContainer>
           <Drawer.Navigator initialRouteName="Browse">
             <Drawer.Screen name="Browse" component={AnimalFactsNavigator} />
             <Drawer.Screen name="Add Animal" component={AddAnimal} />
+            <Drawer.Screen name="Add Fact" component={AddFact} />
           </Drawer.Navigator>
         </NavigationContainer>
+        </FactContext.Provider>
       </AnimalContext.Provider>
     </PaperProvider>
   );

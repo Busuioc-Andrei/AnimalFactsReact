@@ -5,11 +5,13 @@ import { View } from "react-native";
 
 const AnimalInput = () => {
     const [name, setName] = useState<string>('');
+    const [imageUrl, setimageUrl] = useState<string>('');
     const { addAnimal } = useAnimalContext();
 
     const handlePress = () => {
         if (name) {
-            addAnimal(name);
+            addAnimal(name, imageUrl);
+            setimageUrl('');
             setName('');
         }
     }
@@ -20,6 +22,11 @@ const AnimalInput = () => {
                 label="Name"
                 onChangeText={setName}
                 value={name}
+            />
+            <TextInput
+                label="Image Url"
+                onChangeText={setimageUrl}
+                value={imageUrl}
             />
             <Button icon="plus" mode="contained" color="#2679ff" onPress={handlePress}>
                 Add

@@ -5,8 +5,6 @@ import { Button } from "react-native-paper";
 // import RandomFact from './RandomFact';
 import Animals from './Animals';
 import Facts from './Facts';
-import AddAnimal from './AddAnimal';
-import { useNavigation } from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator();
 

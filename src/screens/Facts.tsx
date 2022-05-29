@@ -1,14 +1,17 @@
 import React from "react";
 import { SafeAreaView, ScrollView } from "react-native";
+import Fact from "../components/Fact";
+import { IFact, useAllFacts } from "../context/FactContext";
 
 const Facts = () => {
-    //const itemsToDisplay: ITodo[] = useFinishedTodos();
+    const itemsToDisplay: IFact[] = useAllFacts();
+    
     return (
         <SafeAreaView>
             <ScrollView>
-                {/* {
-                    itemsToDisplay.map((todo, index) => <Todo key={todo.id} todo={todo} />)
-                } */}
+                {
+                    itemsToDisplay.map((fact, index) => <Fact key={fact.id} Fact={fact} />)
+                }
             </ScrollView>
         </SafeAreaView>
     )
