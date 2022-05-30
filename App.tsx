@@ -14,6 +14,7 @@ import * as WebBrowser from 'expo-web-browser';
 import LoginGoogle from './src/screens/LoginGoogle';
 import UserContext, { IUser } from './src/context/UserContext';
 import { fetchUserInfoAsync, TokenResponse } from 'expo-auth-session';
+import { ErrorHandler } from './src/components/ErrorHandler';
 
 const Drawer = createDrawerNavigator();
 WebBrowser.maybeCompleteAuthSession();
@@ -45,8 +46,6 @@ export default function App() {
     });
   };
 
-
-
   const loadAnimals = async () => {
     const items = await fetch(`${API_URL}/crud/animals`)
       .then(res => res.json())
@@ -58,21 +57,37 @@ export default function App() {
   }
 
   const addAnimal = async (name: string, imageUrl: string) => {
-    await fetch(`${API_URL}/crud/animal`, {
+    const res = await fetch(`${API_URL}/crud/animal`, {
       method: 'POST',
       body: JSON.stringify({ name, imageUrl }),
       headers: {
         'Content-Type': 'application/json'
       }
+    }).catch((e) => {
+      console.log(e);
+      throw new Error(e);
     });
+    if(!res.ok){
+      const error = await res.text();
+      console.log(error);
+      throw new Error(error);
+    }
     await loadAnimals();
   }
 
   const deleteAnimal = async (id: string) => {
     setAnimation();
-    await fetch(`${API_URL}/crud/animal?id=${id}`, {
+    const res = await fetch(`${API_URL}/crud/animal?id=${id}`, {
       method: 'DELETE'
+    }).catch((e) => {
+      console.log(e);
+      throw new Error(e);
     });
+    if(!res.ok){
+      const error = await res.text();
+      console.log(error);
+      throw new Error(error);
+    }
     await loadAnimals();
   }
 
@@ -155,6 +170,7 @@ export default function App() {
 
 
   return (
+    <ErrorHandler>
     <PaperProvider>
       <UserContext.Provider value={{
         loadToken,
@@ -172,17 +188,20 @@ export default function App() {
             aRandomFact: randomFact,
             allFacts: facts
           }}>
-          <NavigationContainer>
-            <Drawer.Navigator initialRouteName="Browse">
-              <Drawer.Screen name="Browse" component={AnimalFactsNavigator} />
-              <Drawer.Screen name="Add Animal" component={AddAnimal} />
-              <Drawer.Screen name="Add Fact" component={AddFact} />
-              <Drawer.Screen name="Login with Google" component={LoginGoogle} />
-            </Drawer.Navigator>
-          </NavigationContainer>
+          
+            <NavigationContainer>
+              <Drawer.Navigator initialRouteName="Browse">
+                <Drawer.Screen name="Browse" component={AnimalFactsNavigator} />
+                <Drawer.Screen name="Add Animal" component={AddAnimal} />
+                <Drawer.Screen name="Add Fact" component={AddFact} />
+                <Drawer.Screen name="Login with Google" component={LoginGoogle} />
+              </Drawer.Navigator>
+            </NavigationContainer>
+            
           </FactContext.Provider>
         </AnimalContext.Provider>
       </UserContext.Provider>
     </PaperProvider>
+    </ErrorHandler>
   );
 }
