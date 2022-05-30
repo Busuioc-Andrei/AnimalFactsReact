@@ -5,7 +5,7 @@ import styled from "styled-components/native";
 import { ActivityIndicator, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnimalContext, { IAnimal } from './src/context/AnimalContext';
-import { DarkTheme, NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import AnimalFactsNavigator from './src/screens/Index';
 import { API_URL } from './src/constants';
@@ -19,6 +19,8 @@ const Drawer = createDrawerNavigator();
 export default function App() {
   const [animals, setAnimals] = useState<IAnimal[]>([]);
   const [facts, setFacts] = useState<IFact[]>([]);
+  const [randomFact, setRandomFact] = useState<IFact>();
+  const [refreshState, setRefreshState] = useState<Boolean>(false);
 
   const loadAnimals = async () => {
     const items = await fetch(`${API_URL}/crud/animals`)
@@ -68,6 +70,7 @@ export default function App() {
       }
     });
     await loadFacts();
+    await loadRandomFact();
   }
 
   const deleteFact = async (id: string) => {
@@ -75,11 +78,30 @@ export default function App() {
       method: 'DELETE'
     });
     await loadFacts();
+    await loadRandomFact();
+  }
+
+  const loadRandomFact = async () => {
+    const items = await fetch(`${API_URL}/random/fact`)
+      .then(res => res.json())
+      .catch((e) => {
+        console.log(e);
+        return ;
+      });
+    if(items)
+      setRandomFact(items[0]);
+    else
+      setRandomFact(undefined);
+  }
+
+  const refresh = async () => {
+    loadRandomFact();
   }
 
   useEffect(() => {
     loadAnimals();
     loadFacts();
+    loadRandomFact();
   }, [])
 
   return (
@@ -92,6 +114,8 @@ export default function App() {
         <FactContext.Provider value={{
           addFact,
           deleteFact,
+          refresh,
+          aRandomFact: randomFact,
           allFacts: facts
         }}>
         <NavigationContainer>
