@@ -1,26 +1,51 @@
-import { StatusBar } from 'expo-status-bar';
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
-import styled from "styled-components/native";
-import { ActivityIndicator, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import AnimalContext, { IAnimal } from './src/context/AnimalContext';
-import { DarkTheme, NavigationContainer, useFocusEffect } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import AnimalFactsNavigator from './src/screens/Index';
 import { API_URL } from './src/constants';
-import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
+import { Provider as PaperProvider } from 'react-native-paper';
 import AddAnimal from './src/screens/AddAnimal';
 import AddFact from './src/screens/AddFact';
 import FactContext, { IFact } from './src/context/FactContext';
+import { LayoutAnimation } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import LoginGoogle from './src/screens/LoginGoogle';
+import UserContext, { IUser } from './src/context/UserContext';
+import { fetchUserInfoAsync, TokenResponse } from 'expo-auth-session';
 
 const Drawer = createDrawerNavigator();
+WebBrowser.maybeCompleteAuthSession();
 
 export default function App() {
   const [animals, setAnimals] = useState<IAnimal[]>([]);
   const [facts, setFacts] = useState<IFact[]>([]);
   const [randomFact, setRandomFact] = useState<IFact>();
-  const [refreshState, setRefreshState] = useState<Boolean>(false);
+  const [userToken, setUserToken] = useState<TokenResponse>();
+  const [accessToken, setAccessToken] = useState<string>('');
+  const [user, setUser] = useState<IUser>();
+
+  
+  const setAnimation = () => {
+    LayoutAnimation.configureNext({
+      duration: 250,
+      update: {
+        type: LayoutAnimation.Types.easeIn,
+        springDamping: 0.7,
+      },
+    });
+    LayoutAnimation.configureNext({
+      duration: 500,
+      create: {
+        type: LayoutAnimation.Types.easeIn,
+        property: LayoutAnimation.Properties.scaleXY,
+        springDamping: 0.7,
+      },
+    });
+  };
+
+
 
   const loadAnimals = async () => {
     const items = await fetch(`${API_URL}/crud/animals`)
@@ -44,6 +69,7 @@ export default function App() {
   }
 
   const deleteAnimal = async (id: string) => {
+    setAnimation();
     await fetch(`${API_URL}/crud/animal?id=${id}`, {
       method: 'DELETE'
     });
@@ -95,7 +121,30 @@ export default function App() {
   }
 
   const refresh = async () => {
-    loadRandomFact();
+    // console.log(userToken);
+    // console.log(accessToken);
+    await loadRandomFact();
+  }
+
+  const loadToken = async (token: TokenResponse) => {
+    setUserToken(token);
+    const { accessToken } = token;
+    setAccessToken(accessToken); //weird interaction, if I remove this line, setUserToken(token) does not save the TokenResponse
+    await loadUserData();
+  }
+
+  const loadUserData = async() => {
+    const item = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }).then(res => res.json())
+      .catch((e) => {
+        console.log(e);
+        return ;
+      });
+    setUser(item);
   }
 
   useEffect(() => {
@@ -104,29 +153,36 @@ export default function App() {
     loadRandomFact();
   }, [])
 
+
   return (
     <PaperProvider>
-      <AnimalContext.Provider value={{
-        addAnimal,
-        deleteAnimal,
-        allAnimals: animals
+      <UserContext.Provider value={{
+        loadToken,
+        user: user
       }}>
-        <FactContext.Provider value={{
-          addFact,
-          deleteFact,
-          refresh,
-          aRandomFact: randomFact,
-          allFacts: facts
+        <AnimalContext.Provider value={{
+          addAnimal,
+          deleteAnimal,
+          allAnimals: animals
         }}>
-        <NavigationContainer>
-          <Drawer.Navigator initialRouteName="Browse">
-            <Drawer.Screen name="Browse" component={AnimalFactsNavigator} />
-            <Drawer.Screen name="Add Animal" component={AddAnimal} />
-            <Drawer.Screen name="Add Fact" component={AddFact} />
-          </Drawer.Navigator>
-        </NavigationContainer>
-        </FactContext.Provider>
-      </AnimalContext.Provider>
+          <FactContext.Provider value={{
+            addFact,
+            deleteFact,
+            refresh,
+            aRandomFact: randomFact,
+            allFacts: facts
+          }}>
+          <NavigationContainer>
+            <Drawer.Navigator initialRouteName="Browse">
+              <Drawer.Screen name="Browse" component={AnimalFactsNavigator} />
+              <Drawer.Screen name="Add Animal" component={AddAnimal} />
+              <Drawer.Screen name="Add Fact" component={AddFact} />
+              <Drawer.Screen name="Login with Google" component={LoginGoogle} />
+            </Drawer.Navigator>
+          </NavigationContainer>
+          </FactContext.Provider>
+        </AnimalContext.Provider>
+      </UserContext.Provider>
     </PaperProvider>
   );
 }

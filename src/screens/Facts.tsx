@@ -1,5 +1,5 @@
 import React from "react";
-import { SafeAreaView, ScrollView } from "react-native";
+import { Animated, SafeAreaView, ScrollView } from "react-native";
 import Fact from "../components/Fact";
 import { IFact, useAllFacts } from "../context/FactContext";
 
@@ -8,11 +8,11 @@ const Facts = () => {
     
     return (
         <SafeAreaView>
-            <ScrollView>
+            <Animated.ScrollView>
                 {
                     itemsToDisplay.map((fact, index) => <Fact key={fact.id} Fact={fact} />)
                 }
-            </ScrollView>
+            </Animated.ScrollView>
         </SafeAreaView>
     )
 }
